@@ -300,6 +300,11 @@ class PCMonitor {
         if (data.processes) {
             this.updateProcessList(data.processes);
         }
+
+        // System Info
+        if (data.system) {
+            this.updateSystemInfo(data.system);
+        }
     }
 
     updateFansList(fanData) {
@@ -379,6 +384,48 @@ class PCMonitor {
                 </li>
             `;
         }).join('');
+    }
+
+    updateSystemInfo(system) {
+        if (!system.available) return;
+
+        // Uptime
+        if (system.uptime) {
+            this.setText('sys-uptime', system.uptime);
+        }
+
+        // Motherboard
+        if (system.motherboard) {
+            this.setText('sys-mb-model', system.motherboard.product || '--');
+        }
+
+        // Storage Drives
+        if (system.drives && system.drives.length > 0) {
+            const container = document.getElementById('sys-drives');
+            if (container) {
+                container.innerHTML = system.drives.map(drive => {
+                    const sizeStr = drive.size_gb >= 1000
+                        ? `${(drive.size_gb / 1000).toFixed(1)} TB`
+                        : `${Math.round(drive.size_gb)} GB`;
+
+                    // Truncate model name if too long
+                    let model = drive.model || 'Unknown';
+                    if (model.length > 20) {
+                        model = model.substring(0, 17) + '...';
+                    }
+
+                    return `
+                        <div class="drive-item">
+                            <div class="drive-info">
+                                <div class="drive-name" title="${drive.model}">${model}</div>
+                                <div class="drive-details">${drive.type}</div>
+                            </div>
+                            <span class="drive-size">${sizeStr}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
     }
 }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PC Monitor</title>
-    <link rel="stylesheet" href="/static/style.css?v=27">
+    <link rel="stylesheet" href="/static/style.css?v=30">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -235,7 +235,7 @@
             <!-- Processes Card -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Top Processes</span>
+                    <span class="card-title">Processes</span>
                 </div>
                 <div class="card-body">
                     <div class="process-header">
@@ -252,9 +252,41 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- System Info Card -->
+            <div class="card card-system">
+                <div class="card-header">
+                    <span class="card-title">System</span>
+                </div>
+                <div class="card-body">
+                    <div class="system-grid">
+                        <div class="system-section">
+                            <div class="system-section-title">Uptime</div>
+                            <div class="system-info-row">
+                                <span class="system-value text-green" id="sys-uptime">--</span>
+                            </div>
+                        </div>
+                        <div class="system-section">
+                            <div class="system-section-title">Motherboard</div>
+                            <div class="system-info-row">
+                                <span class="system-label">Model</span>
+                                <span class="system-value" id="sys-mb-model">--</span>
+                            </div>
+                        </div>
+                        <div class="system-section">
+                            <div class="system-section-title">Storage</div>
+                            <div class="drives-list" id="sys-drives">
+                                <div class="system-info-row">
+                                    <span class="system-label">Detecting...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="/static/app.js?v=24"></script>
+    <script src="/static/app.js?v=27"></script>
 </body>
 </html>

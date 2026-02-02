@@ -37,6 +37,8 @@ class HardwareMonitor:
         self._init_memory_hardware_info()
         self._cpu_hardware_info = None
         self._init_cpu_hardware_info()
+        self._system_hardware_info = None
+        self._init_system_hardware_info()
         # Fan stats cache (WMI queries are expensive)
         self._fan_cache = None
         self._fan_cache_time = 0
@@ -169,6 +171,112 @@ class HardwareMonitor:
 
         except Exception as e:
             self._cpu_hardware_info = {'available': False, 'error': str(e)}
+
+    def _init_system_hardware_info(self):
+        """Initialize static system hardware info (motherboard, BIOS, OS, storage) via WMI."""
+        if not WMI_AVAILABLE:
+            self._system_hardware_info = {'available': False}
+            return
+
+        try:
+            w = wmi.WMI()
+
+            # Motherboard info
+            motherboard = {}
+            try:
+                boards = w.Win32_BaseBoard()
+                if boards:
+                    board = boards[0]
+                    motherboard = {
+                        'manufacturer': board.Manufacturer or 'Unknown',
+                        'product': board.Product or 'Unknown',
+                        'serial': board.SerialNumber or 'N/A',
+                    }
+            except Exception:
+                pass
+
+            # BIOS info
+            bios = {}
+            try:
+                bios_info = w.Win32_BIOS()
+                if bios_info:
+                    b = bios_info[0]
+                    bios = {
+                        'vendor': b.Manufacturer or 'Unknown',
+                        'version': b.SMBIOSBIOSVersion or b.Version or 'Unknown',
+                        'date': b.ReleaseDate[:8] if b.ReleaseDate else 'Unknown',
+                    }
+                    # Format date if possible
+                    if bios['date'] != 'Unknown' and len(bios['date']) == 8:
+                        bios['date'] = f"{bios['date'][:4]}-{bios['date'][4:6]}-{bios['date'][6:8]}"
+            except Exception:
+                pass
+
+            # OS info
+            os_info = {}
+            try:
+                os_data = w.Win32_OperatingSystem()
+                if os_data:
+                    o = os_data[0]
+                    os_info = {
+                        'name': o.Caption or 'Windows',
+                        'version': o.Version or 'Unknown',
+                        'build': o.BuildNumber or 'Unknown',
+                        'arch': o.OSArchitecture or 'Unknown',
+                    }
+            except Exception:
+                pass
+
+            # Storage drives
+            drives = []
+            try:
+                disk_drives = w.Win32_DiskDrive()
+                for disk in disk_drives:
+                    if disk.Size:
+                        size_gb = int(disk.Size) / (1024 ** 3)
+                        media_type = 'Unknown'
+                        # Try to detect SSD vs HDD
+                        model = (disk.Model or '').lower()
+                        if 'ssd' in model or 'nvme' in model or 'solid' in model:
+                            media_type = 'SSD'
+                        elif 'hdd' in model or 'hard' in model:
+                            media_type = 'HDD'
+                        else:
+                            # Check interface
+                            interface = (disk.InterfaceType or '').lower()
+                            if 'nvme' in interface:
+                                media_type = 'NVMe SSD'
+                            elif disk.MediaType and 'fixed' in disk.MediaType.lower():
+                                # Default assumption for fixed drives
+                                media_type = 'SSD' if size_gb < 600 else 'HDD'
+
+                        drives.append({
+                            'model': disk.Model or 'Unknown',
+                            'size_gb': round(size_gb, 1),
+                            'interface': disk.InterfaceType or 'Unknown',
+                            'type': media_type,
+                        })
+            except Exception:
+                pass
+
+            # System uptime
+            uptime_seconds = None
+            try:
+                uptime_seconds = int(psutil.boot_time())
+            except Exception:
+                pass
+
+            self._system_hardware_info = {
+                'available': True,
+                'motherboard': motherboard,
+                'bios': bios,
+                'os': os_info,
+                'drives': drives,
+                'boot_time': uptime_seconds,
+            }
+
+        except Exception as e:
+            self._system_hardware_info = {'available': False, 'error': str(e)}
 
     def _init_nvml(self):
         """Initialize NVIDIA Management Library."""
@@ -500,21 +608,22 @@ class HardwareMonitor:
                 for sensor in lhm.Sensor():
                     if sensor.SensorType == 'Control':
                         name = sensor.Name
+                        # Skip pump fans (they always run at 100%)
                         if name == 'Pump Fan':
-                            name = 'Case Fan'
+                            continue
                         percent = int(sensor.Value) if sensor.Value else 0
                         fan_controls[name] = percent
 
                 # Second pass: collect fan RPM and match with controls
                 for sensor in lhm.Sensor():
                     if sensor.SensorType == 'Fan':
-                        rpm = int(sensor.Value) if sensor.Value else 0
                         name = sensor.Name
 
-                        # Rename "Pump Fan" to "Case Fan"
+                        # Skip pump fans (they always run at 100%)
                         if name == 'Pump Fan':
-                            name = 'Case Fan'
+                            continue
 
+                        rpm = int(sensor.Value) if sensor.Value else 0
                         fan_type = 'gpu' if 'GPU' in name else 'system'
                         percent = fan_controls.get(name)
 
@@ -537,21 +646,22 @@ class HardwareMonitor:
                     for sensor in ohm.Sensor():
                         if sensor.SensorType == 'Control':
                             name = sensor.Name
+                            # Skip pump fans (they always run at 100%)
                             if name == 'Pump Fan':
-                                name = 'Case Fan'
+                                continue
                             percent = int(sensor.Value) if sensor.Value else 0
                             fan_controls[name] = percent
 
                     # Second pass: collect fan RPM
                     for sensor in ohm.Sensor():
                         if sensor.SensorType == 'Fan':
-                            rpm = int(sensor.Value) if sensor.Value else 0
                             name = sensor.Name
 
-                            # Rename "Pump Fan" to "Case Fan"
+                            # Skip pump fans (they always run at 100%)
                             if name == 'Pump Fan':
-                                name = 'Case Fan'
+                                continue
 
+                            rpm = int(sensor.Value) if sensor.Value else 0
                             fan_type = 'gpu' if 'GPU' in name else 'system'
                             percent = fan_controls.get(name)
 
@@ -645,6 +755,29 @@ class HardwareMonitor:
 
         return result
 
+    def get_system_info(self) -> dict[str, Any]:
+        """Get system hardware information (mostly static, cached at startup)."""
+        if not self._system_hardware_info or not self._system_hardware_info.get('available'):
+            return {'available': False}
+
+        result = dict(self._system_hardware_info)
+
+        # Add real-time uptime calculation
+        if result.get('boot_time'):
+            uptime_seconds = int(time.time() - result['boot_time'])
+            days = uptime_seconds // 86400
+            hours = (uptime_seconds % 86400) // 3600
+            minutes = (uptime_seconds % 3600) // 60
+
+            if days > 0:
+                result['uptime'] = f"{days}d {hours}h {minutes}m"
+            elif hours > 0:
+                result['uptime'] = f"{hours}h {minutes}m"
+            else:
+                result['uptime'] = f"{minutes}m"
+
+        return result
+
     def get_all_stats(self) -> dict[str, Any]:
         """Get all hardware statistics (ping handled async in server)."""
         return {
@@ -655,6 +788,7 @@ class HardwareMonitor:
             'network': self.get_network_stats(),
             'fans': self.get_fan_stats(),
             'processes': self.get_top_processes(),
+            'system': self.get_system_info(),
         }
 
     def __del__(self):

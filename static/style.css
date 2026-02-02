@@ -81,7 +81,7 @@ header h1 {
 .grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr auto;
     gap: 8px;
     flex: 1;
     min-height: 0;
@@ -411,6 +411,10 @@ header h1 {
     grid-column: span 2;
 }
 
+.card-system {
+    grid-column: 7 / 9;
+}
+
 .card-wide {
     grid-column: span 2;
 }
@@ -627,4 +631,100 @@ header h1 {
 
 .progress-bar {
     flex-shrink: 0;
+}
+
+/* System Info Card Styles */
+.card-system .card-body {
+    padding-top: 0;
+}
+
+.system-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.system-section {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.system-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.system-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.system-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.system-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.drive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.drive-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.drive-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.drive-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.drive-details {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.drive-size {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-purple);
+    margin-left: 8px;
 }
