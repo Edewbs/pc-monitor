@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Monitor</title>
+    <link rel="stylesheet" href="/static/style.css?v=15">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>PC Monitor</h1>
+            <div class="status">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- GPU Card -->
+            <div class="card card-wide">
+                <div class="card-header">
+                    <span class="card-title">GPU</span>
+                    <span class="card-subtitle text-blue" id="gpu-name">--</span>
+                </div>
+                <div class="gpu-content">
+                    <div class="gpu-gauges">
+                        <div class="gpu-gauge-item">
+                            <div class="large-gauge" id="gpu-usage-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="42"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="42"
+                                        stroke="var(--accent-blue)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="264"/>
+                                </svg>
+                                <div class="gauge-center">
+                                    <div class="gauge-value text-blue" id="gpu-usage">0%</div>
+                                    <div class="gauge-label">Usage</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gpu-gauge-item">
+                            <div class="large-gauge" id="gpu-temp-gauge">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="42"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="42"
+                                        stroke="var(--accent-orange)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="264"/>
+                                </svg>
+                                <div class="gauge-center">
+                                    <div class="gauge-value text-orange" id="gpu-temp">--</div>
+                                    <div class="gauge-label">Temp</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gpu-stats">
+                        <div class="gpu-stat-row">
+                            <span class="metric-label">VRAM</span>
+                            <span class="metric-value text-blue" id="gpu-vram">-- / --</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-blue" id="gpu-vram-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="gpu-stats-grid">
+                            <div class="gpu-stat-item">
+                                <span class="stat-label">GPU Clock</span>
+                                <span class="stat-value" id="gpu-clock">--</span>
+                            </div>
+                            <div class="gpu-stat-item">
+                                <span class="stat-label">Mem Clock</span>
+                                <span class="stat-value" id="gpu-mem-clock">--</span>
+                            </div>
+                            <div class="gpu-stat-item">
+                                <span class="stat-label">Fan</span>
+                                <span class="stat-value" id="gpu-fan">--</span>
+                            </div>
+                            <div class="gpu-stat-item">
+                                <span class="stat-label">Power</span>
+                                <span class="stat-value" id="gpu-power">--</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="gpu-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">CPU</span>
+                    <span class="card-value text-green" id="cpu-usage">0%</span>
+                </div>
+                <div class="card-body">
+                    <div class="gauge-row">
+                        <div class="mini-gauge" id="cpu-gauge">
+                            <svg viewBox="0 0 50 50">
+                                <circle class="gauge-bg" cx="25" cy="25" r="20"/>
+                                <circle class="gauge-fill" cx="25" cy="25" r="20"
+                                    stroke="var(--accent-green)"
+                                    stroke-dasharray="126"
+                                    stroke-dashoffset="126"/>
+                            </svg>
+                            <div class="gauge-text text-green">0%</div>
+                        </div>
+                        <div class="gauge-info">
+                            <div class="label">Frequency</div>
+                            <div class="value" id="cpu-freq">-- MHz</div>
+                        </div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Cores/Threads</span>
+                        <span class="metric-value" id="cpu-cores">--/--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Temperature</span>
+                        <span class="metric-value text-orange" id="cpu-temp">--</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="cpu-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Memory</span>
+                    <span class="card-value text-purple" id="mem-pct">0%</span>
+                </div>
+                <div class="card-body">
+                    <div class="gauge-row">
+                        <div class="mini-gauge" id="memory-gauge">
+                            <svg viewBox="0 0 50 50">
+                                <circle class="gauge-bg" cx="25" cy="25" r="20"/>
+                                <circle class="gauge-fill" cx="25" cy="25" r="20"
+                                    stroke="var(--accent-purple)"
+                                    stroke-dasharray="126"
+                                    stroke-dashoffset="126"/>
+                            </svg>
+                            <div class="gauge-text text-purple">0%</div>
+                        </div>
+                        <div class="gauge-info">
+                            <div class="label">Used / Total</div>
+                            <div class="value" id="mem-used-total">-- / -- GB</div>
+                        </div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Speed</span>
+                        <span class="metric-value text-blue" id="mem-speed">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Type</span>
+                        <span class="metric-value" id="mem-type">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Slots</span>
+                        <span class="metric-value" id="mem-slots">--</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="memory-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fans Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Fans</span>
+                </div>
+                <div class="card-body">
+                    <div class="fans-list" id="fans-list">
+                        <div class="fan-item">
+                            <span class="fan-name">Detecting...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Network</span>
+                </div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span class="metric-label">Download</span>
+                        <span class="metric-value text-green" id="net-down">0 MB/s</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Upload</span>
+                        <span class="metric-value text-orange" id="net-up">0 MB/s</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Ping</span>
+                        <span class="metric-value text-blue" id="ping-value">--</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="network-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disk Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Disk I/O</span>
+                </div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span class="metric-label">Read</span>
+                        <span class="metric-value text-blue" id="disk-read">0 MB/s</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Write</span>
+                        <span class="metric-value text-red" id="disk-write">0 MB/s</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="disk-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processes Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Top Processes</span>
+                </div>
+                <div class="card-body">
+                    <div class="process-header">
+                        <span>Name</span>
+                        <span class="process-header-stats">
+                            <span>CPU</span>
+                            <span>Memory</span>
+                        </span>
+                    </div>
+                    <ul class="process-list" id="process-list">
+                        <li class="process-item">
+                            <span class="process-name">Loading...</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=15"></script>
+</body>
+</html>

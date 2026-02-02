@@ -1,0 +1,546 @@
+/* PC Monitor Dashboard Styles - Compact Layout */
+
+:root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a24;
+    --border-color: #2a2a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #888899;
+    --accent-green: #00ff88;
+    --accent-blue: #00aaff;
+    --accent-purple: #aa66ff;
+    --accent-orange: #ff8844;
+    --accent-red: #ff4466;
+    --accent-yellow: #ffcc00;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.dashboard {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    max-width: 1920px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-green);
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-red);
+}
+
+.status-dot.connected {
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    justify-content: space-between;
+}
+
+.card-body .chart-container {
+    flex-shrink: 0;
+}
+
+.card-body .process-list {
+    flex: 1;
+    min-height: 0;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.card-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.card-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.metric-value {
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+/* Compact gauge */
+.gauge-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 0;
+}
+
+.mini-gauge {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+}
+
+.mini-gauge svg {
+    transform: rotate(-90deg);
+    width: 70px;
+    height: 70px;
+}
+
+.mini-gauge .gauge-bg {
+    fill: none;
+    stroke: var(--bg-secondary);
+    stroke-width: 6;
+}
+
+.mini-gauge .gauge-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.mini-gauge .gauge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.gauge-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gauge-info .label {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.gauge-info .value {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+/* Chart container */
+.chart-container {
+    flex: 1;
+    min-height: 60px;
+    margin-top: auto;
+}
+
+/* Progress bar */
+.progress-bar {
+    height: 4px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Process list */
+.process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.process-header-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.process-header-stats span {
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Fans list */
+.fans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.fan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    gap: 12px;
+}
+
+.fan-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.fan-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.fan-speed {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.fan-percent {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.fan-rpm {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.fan-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.fan-bar-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.no-fans {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+}
+
+.process-list {
+    list-style: none;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.process-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1rem;
+}
+
+.process-item:last-child {
+    border-bottom: none;
+}
+
+.process-name {
+    flex: 1;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.process-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.process-stats span {
+    min-width: 60px;
+    text-align: right;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Color classes */
+.text-green { color: var(--accent-green); }
+.text-blue { color: var(--accent-blue); }
+.text-purple { color: var(--accent-purple); }
+.text-orange { color: var(--accent-orange); }
+.text-red { color: var(--accent-red); }
+.text-yellow { color: var(--accent-yellow); }
+
+.bg-green { background: var(--accent-green); }
+.bg-blue { background: var(--accent-blue); }
+.bg-purple { background: var(--accent-purple); }
+.bg-orange { background: var(--accent-orange); }
+.bg-red { background: var(--accent-red); }
+
+/* Two-column cards */
+.card-wide {
+    grid-column: span 2;
+}
+
+.card-wide .card-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+}
+
+.card-wide .metrics-col {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.card-wide .metrics-col .chart-container {
+    flex: 1;
+    min-height: 0;
+}
+
+.dual-gauge {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 8px 0;
+}
+
+/* GPU Card Specific Styles */
+.gpu-content {
+    display: flex;
+    flex: 1;
+    gap: 16px;
+    min-height: 0;
+}
+
+.gpu-gauges {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+}
+
+.gpu-gauge-item {
+    text-align: center;
+}
+
+.large-gauge {
+    position: relative;
+    width: 110px;
+    height: 110px;
+}
+
+.large-gauge svg {
+    transform: rotate(-90deg);
+    width: 110px;
+    height: 110px;
+}
+
+.large-gauge .gauge-bg {
+    fill: none;
+    stroke: var(--bg-secondary);
+    stroke-width: 8;
+}
+
+.large-gauge .gauge-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.large-gauge .gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.large-gauge .gauge-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.large-gauge .gauge-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.gpu-stats {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.gpu-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.gpu-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    padding: 8px 0;
+}
+
+.gpu-stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.gpu-stat-item .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.gpu-stat-item .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Make metric rows not shrink */
+.metric-row {
+    flex-shrink: 0;
+}
+
+.gauge-row {
+    flex-shrink: 0;
+}
+
+.progress-bar {
+    flex-shrink: 0;
+}
