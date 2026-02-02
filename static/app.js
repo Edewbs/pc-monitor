@@ -78,19 +78,19 @@ class PCMonitor {
         };
 
         // CPU Chart
-        this.createChart('cpu-chart', 'rgba(0, 255, 136, 0.8)', 'rgba(0, 255, 136, 0.1)', chartOptions);
+        this.createChart('cpu-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(0, 170, 255, 0.1)', chartOptions);
 
-        // GPU Chart
+        // GPU Chart (white)
         this.createChart('gpu-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(0, 170, 255, 0.1)', chartOptions);
 
-        // Memory Chart
-        this.createChart('memory-chart', 'rgba(170, 102, 255, 0.8)', 'rgba(170, 102, 255, 0.1)', chartOptions);
+        // Memory Chart (white)
+        this.createChart('memory-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(0, 170, 255, 0.1)', chartOptions);
 
-        // Network Chart (dual)
-        this.createDualChart('network-chart', 'rgba(0, 255, 136, 0.8)', 'rgba(255, 136, 68, 0.8)', rateChartOptions);
+        // Network Chart (dual: white download, blue upload)
+        this.createDualChart('network-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(255, 255, 255, 0.8)', rateChartOptions);
 
-        // Disk Chart (dual)
-        this.createDualChart('disk-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(255, 68, 102, 0.8)', rateChartOptions);
+        // Disk Chart (dual: white read, blue write)
+        this.createDualChart('disk-chart', 'rgba(0, 170, 255, 0.8)', 'rgba(255, 255, 255, 0.8)', rateChartOptions);
     }
 
     createChart(canvasId, borderColor, bgColor, options) {
@@ -195,7 +195,7 @@ class PCMonitor {
             if (bar) {
                 const percent = Math.min(usage, 100);
                 bar.style.setProperty('--bar-height', `${percent}%`);
-                bar.style.background = `linear-gradient(to top, var(--accent-green) ${percent}%, var(--bg-secondary) ${percent}%)`;
+                bar.style.background = `linear-gradient(to top, var(--accent-blue) ${percent}%, var(--bg-secondary) ${percent}%)`;
             }
         });
     }
@@ -364,12 +364,7 @@ class PCMonitor {
         container.innerHTML = filtered.map(p => {
             // Calculate actual memory usage in MB
             const memoryMB = (p.memory_percent / 100) * this.totalMemoryGB * 1024;
-            let memoryStr;
-            if (memoryMB >= 1024) {
-                memoryStr = `${(memoryMB / 1024).toFixed(1)} GB`;
-            } else {
-                memoryStr = `${memoryMB.toFixed(0)} MB`;
-            }
+            const memoryStr = `${memoryMB.toFixed(0)} MB`;
 
             // Format CPU with 1 decimal place
             const cpuStr = `${p.cpu_percent.toFixed(1)}%`;
@@ -378,8 +373,8 @@ class PCMonitor {
                 <li class="process-item">
                     <span class="process-name" title="${p.name}">${p.name}</span>
                     <span class="process-stats">
-                        <span class="text-green">${cpuStr}</span>
-                        <span class="text-purple">${memoryStr}</span>
+                        <span class="text-blue">${cpuStr}</span>
+                        <span>${memoryStr}</span>
                     </span>
                 </li>
             `;

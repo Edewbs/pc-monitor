@@ -55,7 +55,7 @@ header {
 header h1 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--accent-green);
+    color: var(--text-primary);
 }
 
 .status {
@@ -74,8 +74,8 @@ header h1 {
 }
 
 .status-dot.connected {
-    background: var(--accent-green);
-    box-shadow: 0 0 6px var(--accent-green);
+    background: var(--text-primary);
+    box-shadow: 0 0 6px var(--text-primary);
 }
 
 .grid {
@@ -385,14 +385,14 @@ header h1 {
 }
 
 /* Color classes */
-.text-green { color: var(--accent-green); }
+.text-green { color: var(--text-primary); }
 .text-blue { color: var(--accent-blue); }
 .text-purple { color: var(--accent-purple); }
 .text-orange { color: var(--accent-orange); }
 .text-red { color: var(--accent-red); }
 .text-yellow { color: var(--accent-yellow); }
 
-.bg-green { background: var(--accent-green); }
+.bg-green { background: var(--text-primary); }
 .bg-blue { background: var(--accent-blue); }
 .bg-purple { background: var(--accent-purple); }
 .bg-orange { background: var(--accent-orange); }
@@ -559,7 +559,7 @@ header h1 {
 /* CPU Card Specific Styles */
 .cpu-name-row {
     font-size: 0.85rem;
-    color: var(--accent-green);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -725,6 +725,6 @@ header h1 {
 .drive-size {
     font-size: 0.8rem;
     font-weight: 700;
-    color: var(--accent-purple);
+    color: var(--text-primary);
     margin-left: 8px;
 }
