@@ -80,7 +80,7 @@ header h1 {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     grid-template-rows: 1fr 1fr;
     gap: 8px;
     flex: 1;
@@ -138,7 +138,7 @@ header h1 {
 }
 
 .card-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -398,7 +398,19 @@ header h1 {
 .bg-orange { background: var(--accent-orange); }
 .bg-red { background: var(--accent-red); }
 
-/* Two-column cards */
+/* Card sizing for 8-column grid */
+.card-gpu {
+    grid-column: span 3;
+}
+
+.card-cpu {
+    grid-column: span 3;
+}
+
+.card {
+    grid-column: span 2;
+}
+
 .card-wide {
     grid-column: span 2;
 }
@@ -434,7 +446,7 @@ header h1 {
 .gpu-content {
     display: flex;
     flex: 1;
-    gap: 16px;
+    gap: 12px;
     min-height: 0;
 }
 
@@ -443,8 +455,8 @@ header h1 {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 12px;
-    padding: 8px;
+    gap: 8px;
+    padding: 4px;
 }
 
 .gpu-gauge-item {
@@ -453,25 +465,25 @@ header h1 {
 
 .large-gauge {
     position: relative;
-    width: 110px;
-    height: 110px;
+    width: 90px;
+    height: 90px;
 }
 
 .large-gauge svg {
     transform: rotate(-90deg);
-    width: 110px;
-    height: 110px;
+    width: 90px;
+    height: 90px;
 }
 
 .large-gauge .gauge-bg {
     fill: none;
     stroke: var(--bg-secondary);
-    stroke-width: 8;
+    stroke-width: 7;
 }
 
 .large-gauge .gauge-fill {
     fill: none;
-    stroke-width: 8;
+    stroke-width: 7;
     stroke-linecap: round;
     transition: stroke-dashoffset 0.3s ease;
 }
@@ -485,13 +497,13 @@ header h1 {
 }
 
 .large-gauge .gauge-value {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     line-height: 1.2;
 }
 
 .large-gauge .gauge-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     text-transform: uppercase;
 }
@@ -510,11 +522,19 @@ header h1 {
     padding: 6px 0;
 }
 
+.gpu-stat-row .metric-label {
+    font-size: 1rem;
+}
+
+.gpu-stat-row .metric-value {
+    font-size: 1.15rem;
+}
+
 .gpu-stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 16px;
-    padding: 8px 0;
+    gap: 6px 16px;
+    padding: 6px 0;
 }
 
 .gpu-stat-item {
@@ -523,13 +543,77 @@ header h1 {
 }
 
 .gpu-stat-item .stat-label {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
 }
 
 .gpu-stat-item .stat-value {
     font-size: 1.1rem;
     font-weight: 700;
+}
+
+/* CPU Card Specific Styles */
+.cpu-name-row {
+    font-size: 0.85rem;
+    color: var(--accent-green);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 6px;
+}
+
+.cpu-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 12px;
+    padding: 4px 0;
+}
+
+.cpu-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cpu-info-item .label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.cpu-info-item .value {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.core-bars-section {
+    padding: 6px 0;
+}
+
+.core-bars {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+}
+
+.core-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.core-bar-fill {
+    width: 100%;
+    height: 24px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+}
+
+.core-bar-label {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
 }
 
 /* Make metric rows not shrink */

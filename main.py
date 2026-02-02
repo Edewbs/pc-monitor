@@ -4,9 +4,15 @@ import threading
 import webbrowser
 import sys
 import os
+import subprocess
+import atexit
+import time
 
 # Add the project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# LibreHardwareMonitor path
+LHM_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools", "LibreHardwareMonitor", "LibreHardwareMonitor.exe")
 
 import pystray
 from PIL import Image, ImageDraw
@@ -63,6 +69,63 @@ def create_icon_image():
     return image
 
 
+def is_lhm_running():
+    """Check if LibreHardwareMonitor is already running."""
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq LibreHardwareMonitor.exe"],
+            capture_output=True,
+            text=True,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+        return "LibreHardwareMonitor.exe" in result.stdout
+    except Exception:
+        return False
+
+
+def start_lhm():
+    """Start LibreHardwareMonitor in the background with admin privileges."""
+    if not os.path.exists(LHM_PATH):
+        print(f"LibreHardwareMonitor not found at: {LHM_PATH}")
+        return
+
+    # Don't start if already running
+    if is_lhm_running():
+        print("LibreHardwareMonitor already running")
+        return
+
+    try:
+        import ctypes
+        # Use ShellExecute to run as admin (will show UAC prompt)
+        # Pass /minimizeToTray to start in system tray
+        # SW_HIDE (0) to not show a window
+        result = ctypes.windll.shell32.ShellExecuteW(
+            None,
+            "runas",  # Request elevation
+            LHM_PATH,
+            "/minimizeToTray",  # Start minimized to system tray
+            os.path.dirname(LHM_PATH),
+            0  # SW_HIDE
+        )
+        # ShellExecuteW returns > 32 on success
+        if result <= 32:
+            print(f"Failed to start LibreHardwareMonitor, error code: {result}")
+    except Exception as e:
+        print(f"Could not start LibreHardwareMonitor: {e}")
+
+
+def stop_lhm():
+    """Stop LibreHardwareMonitor."""
+    try:
+        subprocess.run(
+            ["taskkill", "/F", "/IM", "LibreHardwareMonitor.exe"],
+            capture_output=True,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+    except Exception:
+        pass
+
+
 def open_dashboard():
     """Open the full dashboard in the default browser."""
     webbrowser.open(BASE_URL)
@@ -70,6 +133,7 @@ def open_dashboard():
 
 def exit_app(icon: pystray.Icon):
     """Exit the application and stop the server."""
+    stop_lhm()
     icon.stop()
     if server:
         server.should_exit = True
@@ -98,6 +162,19 @@ def setup_tray(icon: pystray.Icon):
 def main():
     """Main entry point."""
     global server_thread
+
+    # Register cleanup on exit
+    atexit.register(stop_lhm)
+
+    # Start LibreHardwareMonitor for fan/sensor data
+    start_lhm()
+
+    # Wait for LHM to initialize (up to 10 seconds)
+    for _ in range(20):
+        if is_lhm_running():
+            time.sleep(1)  # Give it a moment to initialize WMI
+            break
+        time.sleep(0.5)
 
     # Start the web server in a background thread
     server_thread = threading.Thread(target=run_server, daemon=True)

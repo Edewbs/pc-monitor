@@ -175,18 +175,57 @@ class PCMonitor {
         if (el) el.textContent = text;
     }
 
+    updateCoreBars(perCore) {
+        const container = document.getElementById('cpu-core-bars');
+        if (!container || !perCore.length) return;
+
+        // Only rebuild if core count changed
+        if (container.children.length !== perCore.length) {
+            container.innerHTML = perCore.map((_, i) => `
+                <div class="core-bar">
+                    <div class="core-bar-fill" id="core-bar-${i}"></div>
+                    <span class="core-bar-label">C${i + 1}</span>
+                </div>
+            `).join('');
+        }
+
+        // Update bar heights
+        perCore.forEach((usage, i) => {
+            const bar = document.getElementById(`core-bar-${i}`);
+            if (bar) {
+                const percent = Math.min(usage, 100);
+                bar.style.setProperty('--bar-height', `${percent}%`);
+                bar.style.background = `linear-gradient(to top, var(--accent-green) ${percent}%, var(--bg-secondary) ${percent}%)`;
+            }
+        });
+    }
+
     updateDashboard(data) {
         // CPU
         if (data.cpu) {
             const cpuUsage = data.cpu.usage || 0;
-            this.setText('cpu-usage', `${cpuUsage.toFixed(0)}%`);
-            this.setText('cpu-freq', `${data.cpu.frequency?.toFixed(0) || '--'} MHz`);
-            this.setText('cpu-cores', `${data.cpu.cores || '--'}/${data.cpu.threads || '--'}`);
-            this.setText('cpu-temp', data.cpu.temperature ? `${data.cpu.temperature.toFixed(0)}°C` : 'N/A');
+            const cpuTemp = data.cpu.temperature;
 
-            this.updateMiniGauge('cpu-gauge', cpuUsage);
-            const cpuGaugeText = document.querySelector('#cpu-gauge .gauge-text');
-            if (cpuGaugeText) cpuGaugeText.textContent = `${cpuUsage.toFixed(0)}%`;
+            // Basic stats
+            this.setText('cpu-name', data.cpu.name || 'CPU');
+            this.setText('cpu-usage', `${cpuUsage.toFixed(0)}%`);
+            this.setText('cpu-freq', data.cpu.frequency ? `${(data.cpu.frequency / 1000).toFixed(1)} GHz` : '--');
+            this.setText('cpu-cores', data.cpu.cores || '--');
+            this.setText('cpu-threads', data.cpu.threads || '--');
+            this.setText('cpu-temp', cpuTemp ? `${cpuTemp.toFixed(0)}°C` : 'N/A');
+
+            // Cache info
+            if (data.cpu.l2_cache_kb) {
+                const l2MB = (data.cpu.l2_cache_kb / 1024).toFixed(1);
+                this.setText('cpu-l2', `${l2MB} MB`);
+            }
+            if (data.cpu.l3_cache_kb) {
+                const l3MB = (data.cpu.l3_cache_kb / 1024).toFixed(0);
+                this.setText('cpu-l3', `${l3MB} MB`);
+            }
+
+            // Update core bars
+            this.updateCoreBars(data.cpu.per_core || []);
 
             this.updateChart('cpu-chart', cpuUsage);
         }
@@ -216,7 +255,7 @@ class PCMonitor {
             this.setText('mem-used-total', `${data.memory.used?.toFixed(1) || 0} / ${data.memory.total?.toFixed(0) || 0} GB`);
             this.setText('mem-speed', data.memory.speed ? `${data.memory.speed} MHz` : '--');
             this.setText('mem-type', data.memory.type || '--');
-            this.setText('mem-slots', data.memory.slots_used !== undefined ? `${data.memory.slots_used}/${data.memory.slots_total}` : '--');
+            this.setText('mem-slots', data.memory.slots_used !== undefined ? `${data.memory.slots_used}/${Math.min(data.memory.slots_total, 4)}` : '--');
 
             this.updateMiniGauge('memory-gauge', memPct);
             const memGaugeText = document.querySelector('#memory-gauge .gauge-text');
@@ -315,7 +354,7 @@ class PCMonitor {
         // Filter out system idle process and get top 5
         const filtered = processes
             .filter(p => p.name !== 'System Idle Process')
-            .slice(0, 5);
+            .slice(0, 8);
 
         container.innerHTML = filtered.map(p => {
             // Calculate actual memory usage in MB

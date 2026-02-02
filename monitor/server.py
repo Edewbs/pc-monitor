@@ -2,10 +2,12 @@
 
 import asyncio
 import json
+import re
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Set
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -14,13 +16,56 @@ from .hardware import get_all_stats
 # Path to static files
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
-app = FastAPI(title="PC Monitor")
-
 # Connected WebSocket clients
 connected_clients: Set[WebSocket] = set()
 
+# Connection rate limiting
+MAX_CONNECTIONS = 10
+
 # Background task for broadcasting stats
 broadcast_task = None
+
+
+async def async_ping(host: str = "8.8.8.8") -> dict:
+    """Measure network latency asynchronously."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ping", "-n", "1", "-w", "1000", host,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=2.0)
+
+        if proc.returncode == 0:
+            output = stdout.decode('utf-8', errors='ignore')
+            match = re.search(r'time[=<](\d+)ms', output, re.IGNORECASE)
+            if match:
+                return {'ping': int(match.group(1)), 'host': host, 'success': True}
+
+        return {'ping': None, 'host': host, 'success': False}
+    except asyncio.TimeoutError:
+        return {'ping': None, 'host': host, 'success': False, 'error': 'timeout'}
+    except Exception as e:
+        return {'ping': None, 'host': host, 'success': False, 'error': str(e)}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events."""
+    global broadcast_task
+    # Startup
+    broadcast_task = asyncio.create_task(broadcast_stats())
+    yield
+    # Shutdown
+    if broadcast_task:
+        broadcast_task.cancel()
+        try:
+            await broadcast_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="PC Monitor", lifespan=lifespan)
 
 
 @app.get("/")
@@ -37,7 +82,12 @@ async def get_stats():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time stats."""
+    """WebSocket endpoint for real-time stats with connection limiting."""
+    # Rate limiting: reject if too many connections
+    if len(connected_clients) >= MAX_CONNECTIONS:
+        await websocket.close(code=status.WS_1013_TRY_AGAIN_LATER)
+        return
+
     await websocket.accept()
     connected_clients.add(websocket)
 
@@ -45,7 +95,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Keep connection alive, listen for messages
             try:
-                message = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
     except WebSocketDisconnect:
@@ -63,7 +113,12 @@ async def broadcast_stats():
 
     while True:
         try:
+            # Get hardware stats (sync) and ping (async) concurrently
             stats = get_all_stats()
+
+            # Replace sync ping with async ping
+            ping_task = asyncio.create_task(async_ping())
+
             current_time = asyncio.get_event_loop().time()
 
             # Calculate disk rates
@@ -89,9 +144,19 @@ async def broadcast_stats():
             prev_network = stats['network'].copy() if 'bytes_sent' in stats.get('network', {}) else None
             prev_time = current_time
 
+            # Wait for async ping result
+            stats['ping'] = await ping_task
+
             # Broadcast to all connected clients
             if connected_clients:
-                message = json.dumps(stats)
+                # Safely serialize to JSON with error handling
+                try:
+                    message = json.dumps(stats, default=str)
+                except (TypeError, ValueError) as json_err:
+                    print(f"JSON serialization error: {json_err}")
+                    await asyncio.sleep(0.5)
+                    continue
+
                 disconnected = set()
 
                 for client in connected_clients:
@@ -105,28 +170,11 @@ async def broadcast_stats():
 
             await asyncio.sleep(0.5)  # Update every 500ms
 
+        except asyncio.CancelledError:
+            raise  # Re-raise to allow clean shutdown
         except Exception as e:
             print(f"Error in broadcast_stats: {e}")
             await asyncio.sleep(1)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Start the background broadcast task on server startup."""
-    global broadcast_task
-    broadcast_task = asyncio.create_task(broadcast_stats())
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up on server shutdown."""
-    global broadcast_task
-    if broadcast_task:
-        broadcast_task.cancel()
-        try:
-            await broadcast_task
-        except asyncio.CancelledError:
-            pass
 
 
 # Mount static files (CSS, JS)

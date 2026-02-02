@@ -21,3 +21,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Third-party tools
+tools/

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PC Monitor</title>
-    <link rel="stylesheet" href="/static/style.css?v=15">
+    <link rel="stylesheet" href="/static/style.css?v=27">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -19,7 +19,7 @@
 
         <div class="grid">
             <!-- GPU Card -->
-            <div class="card card-wide">
+            <div class="card card-gpu">
                 <div class="card-header">
                     <span class="card-title">GPU</span>
                     <span class="card-subtitle text-blue" id="gpu-name">--</span>
@@ -91,35 +91,41 @@
             </div>
 
             <!-- CPU Card -->
-            <div class="card">
+            <div class="card card-cpu">
                 <div class="card-header">
                     <span class="card-title">CPU</span>
                     <span class="card-value text-green" id="cpu-usage">0%</span>
                 </div>
                 <div class="card-body">
-                    <div class="gauge-row">
-                        <div class="mini-gauge" id="cpu-gauge">
-                            <svg viewBox="0 0 50 50">
-                                <circle class="gauge-bg" cx="25" cy="25" r="20"/>
-                                <circle class="gauge-fill" cx="25" cy="25" r="20"
-                                    stroke="var(--accent-green)"
-                                    stroke-dasharray="126"
-                                    stroke-dashoffset="126"/>
-                            </svg>
-                            <div class="gauge-text text-green">0%</div>
+                    <div class="cpu-name-row" id="cpu-name">--</div>
+                    <div class="cpu-info-grid">
+                        <div class="cpu-info-item">
+                            <span class="label">Cores</span>
+                            <span class="value" id="cpu-cores">--</span>
                         </div>
-                        <div class="gauge-info">
-                            <div class="label">Frequency</div>
-                            <div class="value" id="cpu-freq">-- MHz</div>
+                        <div class="cpu-info-item">
+                            <span class="label">Threads</span>
+                            <span class="value" id="cpu-threads">--</span>
+                        </div>
+                        <div class="cpu-info-item">
+                            <span class="label">Temp</span>
+                            <span class="value text-orange" id="cpu-temp">--</span>
+                        </div>
+                        <div class="cpu-info-item">
+                            <span class="label">Freq</span>
+                            <span class="value text-blue" id="cpu-freq">--</span>
+                        </div>
+                        <div class="cpu-info-item">
+                            <span class="label">L2</span>
+                            <span class="value" id="cpu-l2">--</span>
+                        </div>
+                        <div class="cpu-info-item">
+                            <span class="label">L3</span>
+                            <span class="value" id="cpu-l3">--</span>
                         </div>
                     </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Cores/Threads</span>
-                        <span class="metric-value" id="cpu-cores">--/--</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Temperature</span>
-                        <span class="metric-value text-orange" id="cpu-temp">--</span>
+                    <div class="core-bars-section">
+                        <div class="core-bars" id="cpu-core-bars"></div>
                     </div>
                     <div class="chart-container">
                         <canvas id="cpu-chart"></canvas>
@@ -249,6 +255,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=15"></script>
+    <script src="/static/app.js?v=24"></script>
 </body>
 </html>

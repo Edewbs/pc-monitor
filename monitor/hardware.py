@@ -35,6 +35,12 @@ class HardwareMonitor:
         self._init_nvml()
         self._memory_hardware_info = None
         self._init_memory_hardware_info()
+        self._cpu_hardware_info = None
+        self._init_cpu_hardware_info()
+        # Fan stats cache (WMI queries are expensive)
+        self._fan_cache = None
+        self._fan_cache_time = 0
+        self._fan_cache_ttl = 1.5  # Cache for 1.5 seconds
 
     def _init_memory_hardware_info(self):
         """Initialize static memory hardware info (speed, type, slots) via WMI."""
@@ -128,6 +134,42 @@ class HardwareMonitor:
         except Exception as e:
             self._memory_hardware_info = {'available': False, 'error': str(e)}
 
+    def _init_cpu_hardware_info(self):
+        """Initialize static CPU hardware info via WMI."""
+        if not WMI_AVAILABLE:
+            self._cpu_hardware_info = {'available': False}
+            return
+
+        try:
+            w = wmi.WMI()
+            cpus = w.Win32_Processor()
+
+            if not cpus:
+                self._cpu_hardware_info = {'available': False}
+                return
+
+            cpu = cpus[0]  # Get first CPU
+
+            # Clean up CPU name
+            name = cpu.Name or 'Unknown CPU'
+            name = ' '.join(name.split())  # Remove extra whitespace
+
+            # Cache sizes in KB
+            l2_cache = cpu.L2CacheSize or 0
+            l3_cache = cpu.L3CacheSize or 0
+
+            self._cpu_hardware_info = {
+                'available': True,
+                'name': name,
+                'max_clock': cpu.MaxClockSpeed,
+                'l2_cache_kb': l2_cache,
+                'l3_cache_kb': l3_cache,
+                'socket': cpu.SocketDesignation,
+            }
+
+        except Exception as e:
+            self._cpu_hardware_info = {'available': False, 'error': str(e)}
+
     def _init_nvml(self):
         """Initialize NVIDIA Management Library."""
         if PYNVML_AVAILABLE and not self._nvml_initialized:
@@ -156,7 +198,7 @@ class HardwareMonitor:
             # Try to get CPU temperature
             cpu_temp = self._get_cpu_temperature()
 
-            return {
+            result = {
                 'usage': cpu_percent,
                 'per_core': cpu_per_core,
                 'frequency': cpu_freq.current if cpu_freq else None,
@@ -165,6 +207,16 @@ class HardwareMonitor:
                 'cores': psutil.cpu_count(logical=False),
                 'threads': psutil.cpu_count(logical=True),
             }
+
+            # Add static hardware info
+            if self._cpu_hardware_info and self._cpu_hardware_info.get('available'):
+                result['name'] = self._cpu_hardware_info.get('name')
+                result['max_clock'] = self._cpu_hardware_info.get('max_clock')
+                result['l2_cache_kb'] = self._cpu_hardware_info.get('l2_cache_kb')
+                result['l3_cache_kb'] = self._cpu_hardware_info.get('l3_cache_kb')
+                result['socket'] = self._cpu_hardware_info.get('socket')
+
+            return result
         except Exception as e:
             return {'error': str(e)}
 
@@ -402,7 +454,7 @@ class HardwareMonitor:
         except Exception as e:
             return {'ping': None, 'host': host, 'success': False, 'error': str(e)}
 
-    def get_top_processes(self, limit: int = 5) -> list[dict[str, Any]]:
+    def get_top_processes(self, limit: int = 8) -> list[dict[str, Any]]:
         """Get top processes by CPU and memory usage."""
         try:
             num_cpus = psutil.cpu_count(logical=True) or 1
@@ -429,17 +481,97 @@ class HardwareMonitor:
             return []
 
     def get_fan_stats(self) -> dict[str, Any]:
-        """Get fan speed statistics."""
-        fans = []
+        """Get fan speed statistics with caching to reduce WMI overhead."""
+        # Check cache first
+        current_time = time.time()
+        if self._fan_cache and (current_time - self._fan_cache_time) < self._fan_cache_ttl:
+            return self._fan_cache
 
-        # GPU Fan(s) from NVML
-        if self._nvml_initialized:
+        fans = []
+        fan_controls = {}  # Map fan name to control percentage
+        lhm_available = False
+
+        # Try LibreHardwareMonitor first (best data source)
+        if WMI_AVAILABLE:
+            try:
+                lhm = wmi.WMI(namespace="root\\LibreHardwareMonitor")
+
+                # First pass: collect control (percentage) values
+                for sensor in lhm.Sensor():
+                    if sensor.SensorType == 'Control':
+                        name = sensor.Name
+                        if name == 'Pump Fan':
+                            name = 'Case Fan'
+                        percent = int(sensor.Value) if sensor.Value else 0
+                        fan_controls[name] = percent
+
+                # Second pass: collect fan RPM and match with controls
+                for sensor in lhm.Sensor():
+                    if sensor.SensorType == 'Fan':
+                        rpm = int(sensor.Value) if sensor.Value else 0
+                        name = sensor.Name
+
+                        # Rename "Pump Fan" to "Case Fan"
+                        if name == 'Pump Fan':
+                            name = 'Case Fan'
+
+                        fan_type = 'gpu' if 'GPU' in name else 'system'
+                        percent = fan_controls.get(name)
+
+                        fans.append({
+                            'name': name,
+                            'percent': percent,
+                            'rpm': rpm,
+                            'type': fan_type
+                        })
+                        lhm_available = True
+            except Exception:
+                pass
+
+            # Try OpenHardwareMonitor if LHM not available
+            if not lhm_available:
+                try:
+                    ohm = wmi.WMI(namespace="root\\OpenHardwareMonitor")
+
+                    # First pass: collect control values
+                    for sensor in ohm.Sensor():
+                        if sensor.SensorType == 'Control':
+                            name = sensor.Name
+                            if name == 'Pump Fan':
+                                name = 'Case Fan'
+                            percent = int(sensor.Value) if sensor.Value else 0
+                            fan_controls[name] = percent
+
+                    # Second pass: collect fan RPM
+                    for sensor in ohm.Sensor():
+                        if sensor.SensorType == 'Fan':
+                            rpm = int(sensor.Value) if sensor.Value else 0
+                            name = sensor.Name
+
+                            # Rename "Pump Fan" to "Case Fan"
+                            if name == 'Pump Fan':
+                                name = 'Case Fan'
+
+                            fan_type = 'gpu' if 'GPU' in name else 'system'
+                            percent = fan_controls.get(name)
+
+                            fans.append({
+                                'name': name,
+                                'percent': percent,
+                                'rpm': rpm,
+                                'type': fan_type
+                            })
+                            lhm_available = True
+                except Exception:
+                    pass
+
+        # If no hardware monitor available, fall back to NVML for GPU fans
+        if not lhm_available and self._nvml_initialized:
             try:
                 device_count = pynvml.nvmlDeviceGetCount()
                 for i in range(device_count):
                     handle = pynvml.nvmlDeviceGetHandleByIndex(i)
                     try:
-                        # Try to get number of fans
                         num_fans = 1
                         try:
                             num_fans = pynvml.nvmlDeviceGetNumFans(handle)
@@ -456,7 +588,6 @@ class HardwareMonitor:
                                     'type': 'gpu'
                                 })
                             except Exception:
-                                # Fall back to basic fan speed
                                 try:
                                     speed_percent = pynvml.nvmlDeviceGetFanSpeed(handle)
                                     fans.append({
@@ -473,53 +604,55 @@ class HardwareMonitor:
             except Exception:
                 pass
 
-        # Try WMI for system fans (CPU, case fans)
-        if WMI_AVAILABLE:
-            try:
-                w = wmi.WMI(namespace="root\\cimv2")
-                # Try Win32_Fan class
-                try:
-                    for fan in w.Win32_Fan():
-                        if fan.ActiveCooling:
-                            fans.append({
-                                'name': fan.Name or 'System Fan',
-                                'percent': None,
-                                'rpm': fan.DesiredSpeed,
-                                'type': 'system'
-                            })
-                except Exception:
-                    pass
+        # Remove duplicates (by name) and filter
+        seen_names = set()
+        filtered_fans = []
+        for f in fans:
+            if f['name'] in seen_names:
+                continue
+            seen_names.add(f['name'])
 
-                # Try CIM_Fan class
-                try:
-                    for fan in w.CIM_Fan():
-                        name = fan.Name or fan.DeviceID or 'System Fan'
-                        if not any(f['name'] == name for f in fans):
-                            fans.append({
-                                'name': name,
-                                'percent': None,
-                                'rpm': getattr(fan, 'DesiredSpeed', None),
-                                'type': 'system'
-                            })
-                except Exception:
-                    pass
-            except Exception:
-                pass
+            if f['type'] == 'gpu':
+                # Always show GPU fans
+                filtered_fans.append(f)
+            elif f['rpm'] and f['rpm'] > 0:
+                # Only show system fans with RPM > 0
+                filtered_fans.append(f)
 
-        return {
+        fans = filtered_fans
+
+        # Sort: CPU first, then Case Fan, then GPU, then others
+        def sort_key(f):
+            name = f['name'].lower()
+            if 'cpu' in name:
+                return (0, name)
+            if 'case' in name:
+                return (1, name)
+            if 'gpu' in name:
+                return (2, name)
+            return (3, name)
+
+        fans.sort(key=sort_key)
+
+        result = {
             'fans': fans,
             'count': len(fans)
         }
 
+        # Update cache
+        self._fan_cache = result
+        self._fan_cache_time = current_time
+
+        return result
+
     def get_all_stats(self) -> dict[str, Any]:
-        """Get all hardware statistics."""
+        """Get all hardware statistics (ping handled async in server)."""
         return {
             'cpu': self.get_cpu_stats(),
             'gpu': self.get_gpu_stats(),
             'memory': self.get_memory_stats(),
             'disk': self.get_disk_stats(),
             'network': self.get_network_stats(),
-            'ping': self.get_ping(),
             'fans': self.get_fan_stats(),
             'processes': self.get_top_processes(),
         }
